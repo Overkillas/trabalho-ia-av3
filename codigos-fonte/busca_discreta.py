@@ -11,7 +11,6 @@ class GlobalRandomSearch:
         self.x_opt = np.concatenate(([0],self.x_opt))
         self.f_opt = self.f(self.x_opt)
         self.historico = [self.f_opt]
-        #atributos do plot
         self.fig = plt.figure(1)
         self.ax = self.fig.subplots()
         

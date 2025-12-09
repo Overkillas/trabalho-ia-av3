@@ -4,13 +4,9 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D  # necessário para projeção 3D
+from mpl_toolkits.mplot3d import Axes3D 
 
 
-# Cada problema é definido por:
-# - func(x): recebe np.array([x1, x2]) e retorna valor escalar
-# - bounds: lista [(x1_min, x1_max), (x2_min, x2_max)]
-# - goal: "min" ou "max"
 
 
 def f1(x):
@@ -83,7 +79,6 @@ problems = [
 
 
 def clip_to_bounds(x, bounds):
-    """Garante que cada coordenada de x fique dentro dos limites."""
     x_clipped = np.empty_like(x, dtype=float)
     for i, (lo, hi) in enumerate(bounds):
         x_clipped[i] = np.clip(x[i], lo, hi)
@@ -91,7 +86,6 @@ def clip_to_bounds(x, bounds):
 
 
 def better(fx_new, fx_best, goal):
-    """Retorna True se fx_new é melhor que fx_best, dado goal 'min' ou 'max'."""
     if goal == "min":
         return fx_new < fx_best
     else:
@@ -108,18 +102,15 @@ class HillClimbing:
         self.t_no_improve = t_no_improve
         self.rng = rng or np.random.default_rng()
 
-        # ponto inicial: limite inferior
         self.x_opt = self.initial_point()
         self.f_opt = self.func(self.x_opt)
         self.it = 0
         self.it_since_improve = 0
 
-        # históricos
         self.history_x = [self.x_opt.copy()]
         self.history_f = [self.f_opt]
 
     def initial_point(self):
-        # amostra uniforme em cada dimensão dentro dos limites
         x = np.array(
             [self.rng.uniform(lo, hi) for (lo, hi) in self.bounds],
             dtype=float,
@@ -127,7 +118,6 @@ class HillClimbing:
         return clip_to_bounds(x, self.bounds)
 
     def neighbor(self):
-        """Gera um vizinho uniforme na bola (hipercubo) de raio eps."""
         delta = self.rng.uniform(-self.eps, self.eps, size=len(self.bounds))
         cand = clip_to_bounds(self.x_opt + delta, self.bounds)
         return cand
@@ -136,7 +126,6 @@ class HillClimbing:
         return better(f_new, f_old, self.goal)
 
     def step(self):
-        """Executa 1 iteração de Hill Climbing. Retorna True se continua."""
         if self.it >= self.max_it or self.it_since_improve >= self.t_no_improve:
             return False
 
@@ -156,7 +145,6 @@ class HillClimbing:
         return True
 
     def search(self):
-        """Roda até critério de parada e retorna melhor solução."""
         while self.step():
             pass
         return self.x_opt, self.f_opt
@@ -172,13 +160,11 @@ class LocalRandomSearch:
         self.t_no_improve = t_no_improve
         self.rng = rng or np.random.default_rng()
 
-        # estado
         self.x_opt = self.sample_initial()
         self.f_opt = self.func(self.x_opt)
         self.it = 0
         self.it_since_improve = 0
 
-        # histórico (opcional, útil p/ plot)
         self.history_x = [self.x_opt.copy()]
         self.history_f = [self.f_opt]
 
@@ -187,7 +173,6 @@ class LocalRandomSearch:
         return clip_to_bounds(x, self.bounds)
 
     def perturb(self):
-        """Gera um passo local gaussiano e clippa para os bounds."""
         step = self.rng.normal(loc=0.0, scale=self.sigma, size=len(self.bounds))
         cand = clip_to_bounds(self.x_opt + step, self.bounds)
         return cand
@@ -196,7 +181,6 @@ class LocalRandomSearch:
         return better(f_new, f_old, self.goal)
 
     def step(self):
-        """Executa 1 iteração de LRS. Retorna True se continua, False se para."""
         if self.it >= self.max_it or self.it_since_improve >= self.t_no_improve:
             return False
 
@@ -216,7 +200,6 @@ class LocalRandomSearch:
         return True
 
     def search(self):
-        """Roda até critério de parada e retorna melhor solução."""
         while self.step():
             pass
         return self.x_opt, self.f_opt
@@ -231,7 +214,6 @@ class GlobalRandomSearch:
         self.t_no_improve = t_no_improve
         self.rng = rng or np.random.default_rng()
 
-        # amostra inicial
         self.x_opt = self.sample_point()
         self.f_opt = self.func(self.x_opt)
 
@@ -248,7 +230,6 @@ class GlobalRandomSearch:
         return better(f_new, f_old, self.goal)
 
     def step(self):
-        """Executa 1 iteração do GRS. Retorna True se continua, False se deve parar."""
         if self.it >= self.max_it or self.it_since_improve >= self.t_no_improve:
             return False
 
@@ -269,7 +250,6 @@ class GlobalRandomSearch:
         return True
 
     def search(self):
-        """Roda até critério de parada e retorna melhor solução."""
         while self.step():
             pass
         return self.x_opt, self.f_opt
@@ -287,7 +267,6 @@ def run_experiment_problem(
     sigma_grs=0.1,
     seed=42,
 ):
-    """Roda HC, LRS e GRS R vezes com hiperparâmetros fixos e retorna dict de resultados."""
     rng = np.random.default_rng(seed)
 
     results = {
@@ -297,7 +276,6 @@ def run_experiment_problem(
     }
 
     for _ in range(R):
-        # Hill Climbing
         hc = HillClimbing(
             func=func,
             bounds=bounds,
@@ -310,7 +288,6 @@ def run_experiment_problem(
         x_hc, fx_hc = hc.search()
         results["HC"].append((x_hc, fx_hc))
 
-        # Local Random Search
         lrs = LocalRandomSearch(
             func=func,
             bounds=bounds,
@@ -323,7 +300,6 @@ def run_experiment_problem(
         x_lrs, fx_lrs = lrs.search()
         results["LRS"].append((x_lrs, fx_lrs))
 
-        # Global Random Search
         grs = GlobalRandomSearch(
             func=func,
             bounds=bounds,
@@ -339,10 +315,6 @@ def run_experiment_problem(
 
 
 def results_mode(results, decimals=3):
-    """
-    Calcula a 'moda' das soluções, discretizando x e f(x) em 'decimals' casas decimais.
-    Retorna o valor mais frequente (por algoritmo).
-    """
     modes = {}
     for alg_name, runs in results.items():
         keys = []
@@ -369,17 +341,6 @@ def find_best_hyperparameter_for_problem(
     decimals=3,
     base_seed=1000,
 ):
-    """
-    Executa o problema 'problem_idx' para um algoritmo (HC, LRS ou GRS),
-    varrendo uma lista de hiperparâmetros (eps ou sigma) e retornando
-    um DataFrame com:
-      - hyperparameter
-      - x_mode
-      - f_mode
-      - freq_mode
-      - R
-      - proportion (freq_mode / R)
-    """
     records = []
 
     for i_hp, hp in enumerate(hp_list):
@@ -445,11 +406,6 @@ def find_best_hyperparameter_for_problem(
 
 
 def select_smallest_good_hp(df_hp):
-    """
-    Para cada (problema, algoritmo), escolhe o hiperparâmetro com:
-      1) maior proporcao (freq_moda/R)
-      2) em caso de empate, o menor hiperparâmetro
-    """
     rows = []
 
     for (problem, algorithm), group in df_hp.groupby(["problem", "algorithm"]):
@@ -461,16 +417,11 @@ def select_smallest_good_hp(df_hp):
 
 
 def get_problem_function(problem_idx):
-    """Retorna func, bounds, goal a partir da lista problems."""
     func, bounds, goal = problems[problem_idx - 1]
     return func, bounds, goal
 
 
 def plot_problem_with_modes(problem_idx, df_modes, grid_points=80):
-    """
-    Plota a superfície 3D do problema e os pontos de moda (x_moda, f(x_moda))
-    para cada algoritmo (HC, LRS, GRS) daquele problema.
-    """
     func, bounds, goal = get_problem_function(problem_idx)
     (x1_min, x1_max), (x2_min, x2_max) = bounds
 
@@ -484,16 +435,13 @@ def plot_problem_with_modes(problem_idx, df_modes, grid_points=80):
         for j in range(X1.shape[1]):
             Z[i, j] = func(np.array([X1[i, j], X2[i, j]]))
 
-    # Filtra as modas do problema solicitado
     df_p = df_modes[df_modes["indice_problema"] == problem_idx]
 
     fig = plt.figure(figsize=(9, 7))
     ax = fig.add_subplot(111, projection="3d")
 
-    # Superfície
     surf = ax.plot_surface(X1, X2, Z, cmap="viridis", alpha=0.6)
 
-    # Pontos de moda por algoritmo
     colors = {"HC": "red", "LRS": "blue", "GRS": "green"}
     for _, row in df_p.iterrows():
         alg = row["algoritmo"]
@@ -509,7 +457,6 @@ def plot_problem_with_modes(problem_idx, df_modes, grid_points=80):
             label=alg,
         )
 
-    # Legenda sem duplicatas
     handles, labels = ax.get_legend_handles_labels()
     unique = dict(zip(labels, handles))
     ax.legend(unique.values(), unique.keys(), title="Algoritmo")
@@ -526,7 +473,6 @@ def plot_problem_with_modes(problem_idx, df_modes, grid_points=80):
 
 
 def main():
-    # hiperparâmetros candidatos
     eps_list_hc = [0.5, 0.2, 0.1, 0.05, 0.01]
     sigma_list_lrs = [0.5, 0.2, 0.1, 0.05, 0.01]
     sigma_list_grs = [0.5, 0.2, 0.1, 0.05, 0.01]
@@ -537,7 +483,6 @@ def main():
 
     dfs_hp = []
 
-    # varre problemas e encontra melhores hiperparâmetros
     for idx, (func, bounds, goal) in enumerate(problems, start=1):
         df_hc = find_best_hyperparameter_for_problem(
             problem_idx=idx,
@@ -645,8 +590,6 @@ def main():
     print("\nTabela de modas:")
     print(df_modes)
 
-    # plota alguns problemas (ajuste como quiser)
-    # pode chamar para os outros também:
     for i in range(1, 7):
         plot_problem_with_modes(i, df_modes)
 
